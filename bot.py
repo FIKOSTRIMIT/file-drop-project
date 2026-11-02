@@ -3,8 +3,8 @@ from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
 from aiogram.types import Message
 
-TOKEN = os.getenv("BOT_TOKEN", "YOUR_BOT_TOKEN")
-CHANNEL_ID = int(os.getenv("CHANNEL_ID", "-1001234567890"))
+TOKEN = os.getenv("BOT_TOKEN", "9253625270:AAHojU7r0X9Rp_rBSOoRNSf7iBoizI8uDbU")
+CHANNEL_ID = int(os.getenv("CHANNEL_ID", "-1004326435953"))
 
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
