@@ -4,21 +4,19 @@ document.addEventListener('DOMContentLoaded', () => {
   const queueSection = document.getElementById('queueSection');
   const fileList = document.getElementById('fileList');
 
-const CHUNK_SIZE = 1 * 1024 * 1024;  // 1 МБ чанк для стабильности
+  // ⚠️ ВСТАВЬТЕ СВАИ ДАННЫЕ СЮДА:
+  const BOT_TOKEN = "9253625270:AAHojU7r0X9Rp_rBSOoRNSf7iBoizI8uDbU";
+  const CHAT_ID = "-1004326435953"; // Начинается с минуса, например: -1001234567890
 
-  selectBtn.addEventListener('click', () => fileInput.click());
+  selectBtn.addEventListener('click', () => {
+    fileInput.click();
+  });
 
   fileInput.addEventListener('change', (e) => {
     const files = Array.from(e.target.files);
     if (!files.length) return;
 
-    files.forEach(file => {
-      if (file.size > MAX_SIZE) {
-        alert(`Файл "${file.name}" превышает лимит в 1 ГБ.`);
-        return;
-      }
-      uploadFileInChunks(file);
-    });
+    files.forEach(file => uploadToTelegram(file));
     fileInput.value = '';
   });
 
@@ -30,7 +28,7 @@ const CHUNK_SIZE = 1 * 1024 * 1024;  // 1 МБ чанк для стабильн�
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   }
 
-  async function uploadFileInChunks(file) {
+  function uploadToTelegram(file) {
     queueSection.classList.remove('hidden');
     const fileId = 'file-' + Math.random().toString(36).substring(2, 9);
 
@@ -45,7 +43,7 @@ const CHUNK_SIZE = 1 * 1024 * 1024;  // 1 МБ чанк для стабильн�
         <div class="progress-bar" id="pb-${fileId}"></div>
       </div>
       <div class="file-status" id="status-${fileId}">
-        <span>Подготовка...</span>
+        <span>Отправка в Telegram...</span>
         <span id="percent-${fileId}">0%</span>
       </div>
     `;
@@ -55,53 +53,49 @@ const CHUNK_SIZE = 1 * 1024 * 1024;  // 1 МБ чанк для стабильн�
     const percentText = document.getElementById(`percent-${fileId}`);
     const statusText = document.getElementById(`status-${fileId}`);
 
-    const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
-    let uploadedBytes = 0;
+    // Определяем тип отправки
+    let apiMethod = 'sendDocument';
+    let fileField = 'document';
 
-    try {
-      const concurrency = 3;
-      let currentChunk = 0;
-
-      async function sendNextBatch() {
-        while (currentChunk < totalChunks) {
-          const chunkIndex = currentChunk++;
-          const start = chunkIndex * CHUNK_SIZE;
-          const end = Math.min(start + CHUNK_SIZE, file.size);
-          const chunk = file.slice(start, end);
-
-          const formData = new FormData();
-          formData.append('file', chunk);
-          formData.append('fileName', file.name);
-          formData.append('chunkIndex', chunkIndex);
-          formData.append('totalChunks', totalChunks);
-
-          const res = await fetch('/.netlify/functions/upload-chunk', {
-            method: 'POST',
-            body: formData
-          });
-
-          if (!res.ok) throw new Error('Ошибка загрузки чанка');
-
-          uploadedBytes += (end - start);
-          const percent = Math.round((uploadedBytes / file.size) * 100);
-          pb.style.width = `${percent}%`;
-          percentText.textContent = `${percent}%`;
-          statusText.firstElementChild.textContent = 'Загрузка...';
-        }
-      }
-
-      const workers = [];
-      for (let i = 0; i < concurrency; i++) {
-        workers.push(sendNextBatch());
-      }
-      await Promise.all(workers);
-
-      pb.style.width = '100%';
-      percentText.textContent = '100%';
-      statusText.innerHTML = '<span style="color: var(--success-color)">Успешно загружено!</span>';
-
-    } catch (err) {
-      statusText.innerHTML = '<span style="color: var(--error-color)">Ошибка сети / Прервано</span>';
+    if (file.type.startsWith('image/')) {
+      apiMethod = 'sendPhoto';
+      fileField = 'photo';
+    } else if (file.type.startsWith('video/')) {
+      apiMethod = 'sendVideo';
+      fileField = 'video';
     }
+
+    const formData = new FormData();
+    formData.append('chat_id', CHAT_ID);
+    formData.append(fileField, file);
+    formData.append('caption', `📁 Файл с сайта: ${file.name}\n⚖️ Размер: ${formatBytes(file.size)}`);
+
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `https://api.telegram.org/bot${BOT_TOKEN}/${apiMethod}`, true);
+
+    // Отслеживание реального прогресса загрузки в сеть
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) {
+        const percent = Math.round((e.loaded / e.total) * 100);
+        pb.style.width = `${percent}%`;
+        percentText.textContent = `${percent}%`;
+      }
+    };
+
+    xhr.onload = () => {
+      if (xhr.status === 200) {
+        pb.style.width = '100%';
+        percentText.textContent = '100%';
+        statusText.innerHTML = '<span style="color: var(--success-color)">Успешно доставлено в архив!</span>';
+      } else {
+        statusText.innerHTML = '<span style="color: var(--error-color)">Ошибка Telegram API</span>';
+      }
+    };
+
+    xhr.onerror = () => {
+      statusText.innerHTML = '<span style="color: var(--error-color)">Ошибка сети</span>';
+    };
+
+    xhr.send(formData);
   }
 });
