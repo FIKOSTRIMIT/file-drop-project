@@ -4,8 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const queueSection = document.getElementById('queueSection');
   const fileList = document.getElementById('fileList');
 
-  const CHUNK_SIZE = 2 * 1024 * 1024;  // Уменьшить чанк до 2 МБ вместо 8 МБ
-  const CHUNK_SIZE = 8 * 1024 * 1024;  // 8 МБ чанк
+const CHUNK_SIZE = 1 * 1024 * 1024;  // 1 МБ чанк для стабильности
 
   selectBtn.addEventListener('click', () => fileInput.click());
 
