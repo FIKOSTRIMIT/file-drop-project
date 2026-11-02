@@ -1,0 +1,10 @@
+{
+  "name": "file-drop-fast-upload",
+  "version": "1.0.0",
+  "description": "FILE DROP — параллельная загрузка файлов до 1 ГБ чанками по 8 МБ",
+  "main": "app.js",
+  "scripts": {
+    "start": "npx netlify dev"
+  },
+  "dependencies": {}
+}

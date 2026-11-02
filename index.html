@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FILE DROP — Быстрая загрузка до 1 ГБ</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-color: #0a0d12;
+      --card-bg: rgba(18, 24, 38, 0.65);
+      --card-border: rgba(50, 255, 126, 0.15);
+      --accent-color: #2ed573;
+      --accent-glow: rgba(46, 213, 115, 0.25);
+      --accent-hover: #26af5f;
+      --text-main: #f1f2f6;
+      --text-muted: #a4b0be;
+      --error-color: #ff4757;
+      --success-color: #2ed573;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    .background-glow {
+      position: absolute;
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(circle, var(--accent-glow) 0%, rgba(0,0,0,0) 70%);
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 540px;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .header { text-align: center; }
+
+    .logo-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      background: rgba(46, 213, 115, 0.1);
+      border: 1px solid var(--accent-glow);
+      color: var(--accent-color);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      letter-spacing: 2px;
+      margin-bottom: 12px;
+    }
+
+    h1 { font-size: 1.8rem; font-weight: 700; margin-bottom: 8px; }
+    .subtitle { color: var(--text-muted); font-size: 0.95rem; }
+
+    .dropzone-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(16px);
+      border: 1px dashed var(--card-border);
+      border-radius: 20px;
+      padding: 40px 20px;
+      text-align: center;
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    }
+
+    .dropzone-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .upload-icon {
+      color: var(--accent-color);
+      background: rgba(46, 213, 115, 0.08);
+      padding: 16px;
+      border-radius: 50%;
+    }
+
+    .btn-primary {
+      background-color: var(--accent-color);
+      color: #0a0d12;
+      font-size: 1rem;
+      font-weight: 600;
+      padding: 14px 28px;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 14px var(--accent-glow);
+    }
+
+    .btn-primary:hover { background-color: var(--accent-hover); transform: translateY(-1px); }
+
+    .file-limit-info { font-size: 0.75rem; color: rgba(164, 176, 190, 0.6); }
+
+    .queue-section {
+      background: var(--card-bg);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 20px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .queue-section.hidden { display: none; }
+
+    .file-item {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      padding: 12px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .file-info { display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; }
+    .file-name { max-width: 70%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .file-size { color: var(--text-muted); font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; }
+
+    .progress-bar-container { width: 100%; height: 6px; background: rgba(255, 255, 255, 0.1); border-radius: 3px; overflow: hidden; }
+    .progress-bar { height: 100%; width: 0%; background: var(--accent-color); transition: width 0.1s linear; }
+
+    .file-status { display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted); }
+    .file-status.success { color: var(--success-color); }
+    .file-status.error { color: var(--error-color); }
+  </style>
+</head>
+<body>
+  <div class="background-glow"></div>
+
+  <main class="container">
+    <header class="header">
+      <div class="logo-badge">FILE DROP</div>
+      <h1>Загрузка до 1 ГБ</h1>
+      <p class="subtitle">Быстрая передача файлов без задержек</p>
+    </header>
+
+    <section class="dropzone-card">
+      <input type="file" id="fileInput" multiple accept="image/*,video/*" hidden>
+      <div class="dropzone-content">
+        <div class="upload-icon">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="17 8 12 3 7 8"/>
+            <line x1="12" y1="3" x2="12" y2="15"/>
+          </svg>
+        </div>
+        <button type="button" class="btn-primary" id="selectBtn">Выбрать фото и видео</button>
+        <span class="file-limit-info">Максимальный размер файла: 1 ГБ</span>
+      </div>
+    </section>
+
+    <section class="queue-section hidden" id="queueSection">
+      <div class="file-list" id="fileList"></div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
